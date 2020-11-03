@@ -2,6 +2,9 @@ extends layout
 
 block content
   div
-    for joke in jokes
+    for j in jokes
       div
-        p= joke.text
+        p= j.text
+        a(href=`/delete/${j.id}`) Delete 
+        a(href=`/deletequery?id=${j.id}`) Delete
+        p= j.date.toGMTString()

@@ -33,4 +33,16 @@ router.get('/', function(req, res, next) {
   res.render('jokeList', { jokes: allJokes });
 });
 
+router.get('/delete/:id', function(req, res){
+  console.log(`Deleting joke ${req.params.id}`);
+
+  res.render('jokeList', { jokes: allJokes });
+});
+
+router.get('/deletequery', function(req, res){
+  console.log(`Deleting query joke ${req.query.id}`);
+
+  res.render('jokeList', { jokes: allJokes });
+});
+
 module.exports = router;

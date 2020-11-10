@@ -36,13 +36,12 @@ router.get('/', function(req, res, next) {
 router.get('/delete/:id', function(req, res){
   console.log(`Deleting joke ${req.params.id}`);
 
-  res.render('jokeList', { jokes: allJokes });
+  let filteredJokes = allJokes.filter( (arrayElement) => arrayElement.id != req.params.id);
+
+  allJokes = filteredJokes;
+  
+  res.redirect('/');
 });
 
-router.get('/deletequery', function(req, res){
-  console.log(`Deleting query joke ${req.query.id}`);
-
-  res.render('jokeList', { jokes: allJokes });
-});
 
 module.exports = router;

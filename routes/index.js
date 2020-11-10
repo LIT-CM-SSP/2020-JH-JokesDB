@@ -48,7 +48,13 @@ router.get('/createJoke', function(req, res) {
   console.log("Handling the /createJoke route");
 
   res.render('newJokeForm');
-})
+});
+
+router.post('/newJoke', function(req, res) {
+  console.log(`From submitted with thses values ${req.body.jokeText} and ${req.body.submit}`);
+
+  res.render('newJokeForm');
+});
 
 
 module.exports = router;

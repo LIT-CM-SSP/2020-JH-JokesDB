@@ -51,9 +51,17 @@ router.get('/createJoke', function(req, res) {
 });
 
 router.post('/newJoke', function(req, res) {
-  console.log(`From submitted with thses values ${req.body.jokeText} and ${req.body.submit}`);
+  console.log(`From submitted with these values ${req.body.jokeText} and ${req.body.submit}`);
 
-  res.render('newJokeForm');
+  if (req.body.submit == "Cancel")
+  {
+    res.redirect('/');
+  }
+  else
+  {
+    console.log("Adding a new joke");
+    res.render('newJokeForm');
+  }
 });
 
 

@@ -3,16 +3,17 @@ const { render } = require('../app');
 var router = express.Router();
 
 var allJokes = new Array();
+var jokesID = 1;
 
 var joke = {};
-joke.id = 1;
+joke.id = jokesID++;
 joke.text = "Knock, knock. Who is there?";
 joke.date = new Date();
 
 allJokes.push(joke);
 
 joke = {
- id: 2,
+ id: jokesID++,
  text: "Did you hear about ...",
  date: new Date()
 };
@@ -60,7 +61,18 @@ router.post('/newJoke', function(req, res) {
   else
   {
     console.log("Adding a new joke");
-    res.render('newJokeForm');
+    //Todo
+    // Create a new joke object with the text of the joke being equal to the value
+    // of the jokeText input field. Then add this new joke to the allJokes array.
+
+    let newJoke = {};
+    newJoke.id = jokesID++;
+    newJoke.text = req.body.jokeText;
+    newJoke.date = new Date();
+
+    allJokes.push(newJoke);
+
+    res.redirect('/');
   }
 });
 

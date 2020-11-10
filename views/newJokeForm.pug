@@ -2,13 +2,6 @@ extends layout
 
 block content
   div
-    for j in jokes
-      div
-        p= j.text
-        a(href=`/delete/${j.id}`) Delete 
-        p= j.date.toGMTString()
-
-  div
     form(method="post" action="/newJoke")
       input(type="text" name="jokeText")
       input(type="submit" value="Create")

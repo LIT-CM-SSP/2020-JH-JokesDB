@@ -9,6 +9,4 @@ block content
         p= j.date.toGMTString()
 
   div
-    form(method="post" action="/newJoke")
-      input(type="text" name="jokeText")
-      input(type="submit" value="Create")
+    a(href='/createJoke') Create a new joke

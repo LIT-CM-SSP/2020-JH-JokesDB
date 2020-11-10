@@ -1,4 +1,5 @@
 var express = require('express');
+const { render } = require('../app');
 var router = express.Router();
 
 var allJokes = new Array();
@@ -42,6 +43,12 @@ router.get('/delete/:id', function(req, res){
   
   res.redirect('/');
 });
+
+router.get('/createJoke', function(req, res) {
+  console.log("Handling the /createJoke route");
+
+  res.render('newJokeForm');
+})
 
 
 module.exports = router;

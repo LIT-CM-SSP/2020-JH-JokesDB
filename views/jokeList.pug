@@ -3,10 +3,12 @@ extends layout
 block content
   div
     for j in jokes
-      div
-        p= j.text
-        a(href=`/delete/${j.id}`) Delete 
-        p= j.date.toGMTString()
+      div.joke
+        p.text= j.text
+        p.date= j.date.toGMTString()
+        a(href=`/delete/${j.id}`) Delete
+        | &nbsp;
+        a(href=`/edit/${j.id}`) Edit  
 
   div
     a(href='/createJoke') Create a new joke

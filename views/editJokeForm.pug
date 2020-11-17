@@ -1,0 +1,11 @@
+extends layout
+
+block content
+  div
+    form(method="post" action="/editJoke")
+      textarea(rows="5" name="jokeText") #{joke.text}
+      <br/>
+      input(type="text" name="id" value=joke.id hidden)
+      input(type="submit" name="submit" value="Update")
+      input(type="submit" name="submit" value="Cancel")
+

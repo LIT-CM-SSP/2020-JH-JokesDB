@@ -6,3 +6,17 @@ body {
 a {
   color: #00B7FF;
 }
+
+div.joke {
+  border: 0.2em solid gray;
+  padding: 0.25em;
+  margin-bottom: 0.5em;
+}
+p.text {
+  font-weight: bold;
+}
+
+p.date {
+  font-size: small;
+  font-style: italic;
+}

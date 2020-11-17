@@ -1,5 +1,4 @@
 var express = require('express');
-const { render } = require('../app');
 var router = express.Router();
 
 var allJokes = new Array();
@@ -75,6 +74,60 @@ router.post('/newJoke', function(req, res) {
     res.redirect('/');
   }
 });
+
+router.get('/edit/:id', function(req, res){
+  console.log(`Editing joke ${req.params.id}`);
+
+  let jokeToEdit = allJokes.filter( (arrayElement) => arrayElement.id == req.params.id);
+
+  // SSP: jokeToEdit should now be an array containing one joke object matching 
+  // the id of the joke to edit.
+  if (jokeToEdit.length != 0)
+  {
+    res.render('editJokeForm', {joke: jokeToEdit[0]});
+  }
+  else
+  {
+    // SSP: We should never get to this branch of the if statement unless the html was somehow
+    // "hacked". Let's just redirect to the main page.
+    res.redirect('/');
+  }
+  
+});
+
+router.post('/editJoke', function(req, res) {
+  console.log(`Processing edit for joke ${req.body.id}`);
+
+  if (req.body.submit == "Update")
+  {
+    // SSP: Let's get the id of the joke we are editing. This id is stored in a 
+    // hidden text field in the form called 'id'.
+    let idOfJokeToEdit = req.body.id;
+
+    // SSP: The findIndex method on Javascript arrays returns the index that satisfies the provided
+    // texting function or -1 if no element is found.
+    let indexOfJokeToEdit = allJokes.findIndex( (arrayElement) => arrayElement.id == idOfJokeToEdit);
+
+    // SSP: jokeToEdit should now be an array containing one Joke object that matches the
+    // id of the joke we want to edit.
+
+    let newJokeText = req.body.jokeText.trim();
+
+    if (indexOfJokeToEdit != -1 && newJokeText.length != 0)
+    {
+      // SSP: Edit the text of the Joke we are editing to match the jokeText that
+      // was entered in the form
+      allJokes[indexOfJokeToEdit].text = newJokeText;
+
+      // SSP: Let's also update the date property of the Joke to reflect
+      // the current date and time
+      allJokes[indexOfJokeToEdit].date = new Date();
+    }
+  }
+  
+  res.redirect('/');
+  
+})
 
 
 module.exports = router;

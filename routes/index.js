@@ -1,23 +1,16 @@
+const { query } = require('express');
 var express = require('express');
 var router = express.Router();
+var mysql = require('mysql');
 
-var allJokes = new Array();
-var jokesID = 1;
-
-var joke = {};
-joke.id = jokesID++;
-joke.text = "Knock, knock. Who is there?";
-joke.date = new Date();
-
-allJokes.push(joke);
-
-joke = {
- id: jokesID++,
- text: "Did you hear about ...",
- date: new Date()
-};
-
-allJokes.push(joke);
+// SSP: Create a MySql connection pool
+var pool = mysql.createPool({
+  connectionLimit: 5,
+  host: 'localhost',
+  user: 'root',
+  password: 'password',
+  database: 'jokesdb'
+});
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -31,7 +24,50 @@ router.get('/', function(req, res, next) {
    * Render jokeList.pug page and pass it the array of Jokes objects
    */
 
-  res.render('jokeList', { jokes: allJokes });
+
+   pool.getConnection(function(err, connection){
+     if (err) {
+      // SSP: Got an error, handle it
+      if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
+        console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
+      }
+      else {
+        console.log("Got a DB error when trying to connect", err);
+      }
+
+      res.render('error', {error: err});
+
+     }
+     else {
+      // SSP: No error, lets use the connection
+      connection.query('SELECT * FROM jokes', function(err, results, fields){
+        if (err)
+        {
+          // SSP: Handle the error
+          res.render('error', {error: err});
+        }
+
+        var allJokes = new Array();
+        
+        for (let i=0; i < results.length; i++) {
+          let joke = {};
+          joke.id = results[i].id;
+          joke.text = results[i].text;
+          joke.date = new Date(results[i].date);
+
+          allJokes.push(joke);
+        }
+
+        connection.release();
+        
+        res.render('jokeList', { jokes: allJokes });
+
+      });
+
+     }
+   });
+
+  
 });
 
 router.get('/delete/:id', function(req, res){

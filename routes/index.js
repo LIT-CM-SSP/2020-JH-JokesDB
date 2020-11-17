@@ -6,10 +6,10 @@ var mysql = require('mysql');
 // SSP: Create a MySql connection pool
 var pool = mysql.createPool({
   connectionLimit: 5,
-  host: 'localhost',
-  user: 'root',
-  password: 'password',
-  database: 'jokesdb'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE
 });
 
 /* GET home page. */
@@ -48,7 +48,7 @@ router.get('/', function(req, res, next) {
         }
 
         var allJokes = new Array();
-        
+
         for (let i=0; i < results.length; i++) {
           let joke = {};
           joke.id = results[i].id;
@@ -73,11 +73,37 @@ router.get('/', function(req, res, next) {
 router.get('/delete/:id', function(req, res){
   console.log(`Deleting joke ${req.params.id}`);
 
-  let filteredJokes = allJokes.filter( (arrayElement) => arrayElement.id != req.params.id);
+  pool.getConnection(function(err, connection) {
+    if (err) {
+      // SSP: Got an error, handle it
+      if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
+        console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
+      }
+      else {
+        console.log("Got a DB error when trying to connect", err);
+      }
 
-  allJokes = filteredJokes;
-  
-  res.redirect('/');
+      res.render('error', {error: err});
+
+     }
+     else {
+       // SSP: No error, should be able to issue a query
+       connection.query('DELETE from jokes where id=?', [req.params.id], function(err, results, fields){
+        if (err)
+        {
+          // SSP: Handle the error
+          res.render('error', {error: err});
+        }
+        else {
+          // SSP: Looks like joke has been deleted
+          connection.release();
+
+          res.redirect('/');
+        }
+
+       });
+     }
+  });
 });
 
 router.get('/createJoke', function(req, res) {
@@ -101,13 +127,42 @@ router.post('/newJoke', function(req, res) {
     // of the jokeText input field. Then add this new joke to the allJokes array.
 
     let newJoke = {};
-    newJoke.id = jokesID++;
     newJoke.text = req.body.jokeText;
     newJoke.date = new Date();
 
-    allJokes.push(newJoke);
+    pool.getConnection(function(err, connection) {
+      if (err) {
+        // SSP: Got an error, handle it
+        if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
+          console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
+        }
+        else {
+          console.log("Got a DB error when trying to connect", err);
+        }
+  
+        res.render('error', {error: err});
+  
+       }
+       else {
+         // SSP: All is good, let's use the connect to issue a query
+         connection.query('INSERT INTO jokes (text, date) VALUES(?,?)',[newJoke.text, newJoke.date], function(err, results, fields){
+          if (err)
+          {
+            // SSP: Handle the error
+            res.render('error', {error: err});
+          }
+          else {
+            // SSP: Just for demo purposes here is how you get the auto increment field
+            newJoke.id = results.insertId;
+            console.log(`The Id of the new Joke is ${newJoke.id}`);
 
-    res.redirect('/');
+            connection.release();
+
+            res.redirect('/');
+          }
+         });
+       }
+    });
   }
 });
 

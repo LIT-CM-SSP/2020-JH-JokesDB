@@ -26,7 +26,7 @@ router.get('/', function(req, res, next) {
 
 
    pool.getConnection(function(err, connection){
-     if (err) {
+    if (err) {
       // SSP: Got an error, handle it
       if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
         console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
@@ -37,9 +37,14 @@ router.get('/', function(req, res, next) {
 
       res.render('error', {error: err});
 
-     }
-     else {
+    }
+    else {
       // SSP: No error, lets use the connection
+
+      // SSP: The query function is passed the query, an array of unknowns (if any) and a callback
+      // function. The callback when called will be passed three arguments: error will be an Error 
+      // if one occurred during the query; results will contain the results of the query; fields will 
+      // contain information about the returned results fields (if any)
       connection.query('SELECT * FROM jokes', function(err, results, fields){
         if (err)
         {
@@ -62,9 +67,9 @@ router.get('/', function(req, res, next) {
         
         res.render('jokeList', { jokes: allJokes });
 
-      });
+    });
 
-     }
+    }
    });
 
   
@@ -85,10 +90,15 @@ router.get('/delete/:id', function(req, res){
 
       res.render('error', {error: err});
 
-     }
-     else {
-       // SSP: No error, should be able to issue a query
-       connection.query('DELETE from jokes where id=?', [req.params.id], function(err, results, fields){
+    }
+    else {
+      // SSP: No error, should be able to issue a query
+
+      // SSP: The query function is passed the query, an array of unknowns (if any) and a callback
+      // function. The callback when called will be passed three arguments: error will be an Error 
+      // if one occurred during the query; results will contain the results of the query; fields will 
+      // contain information about the returned results fields (if any)
+      connection.query('DELETE from jokes where id=?', [req.params.id], function(err, results, fields){
         if (err)
         {
           // SSP: Handle the error
@@ -101,8 +111,8 @@ router.get('/delete/:id', function(req, res){
           res.redirect('/');
         }
 
-       });
-     }
+        });
+    }
   });
 });
 
@@ -142,10 +152,15 @@ router.post('/newJoke', function(req, res) {
   
         res.render('error', {error: err});
   
-       }
-       else {
-         // SSP: All is good, let's use the connect to issue a query
-         connection.query('INSERT INTO jokes (text, date) VALUES(?,?)',[newJoke.text, newJoke.date], function(err, results, fields){
+      }
+      else {
+        // SSP: All is good, let's use the connect to issue a query
+
+        // SSP: The query function is passed the query, an array of unknowns (if any) and a callback
+        // function. The callback when called will be passed three arguments: error will be an Error 
+        // if one occurred during the query; results will contain the results of the query; fields will 
+        // contain information about the returned results fields (if any)
+        connection.query('INSERT INTO jokes (text, date) VALUES(?,?)',[newJoke.text, newJoke.date], function(err, results, fields){
           if (err)
           {
             // SSP: Handle the error
@@ -160,8 +175,8 @@ router.post('/newJoke', function(req, res) {
 
             res.redirect('/');
           }
-         });
-       }
+        });
+      }
     });
   }
 });
@@ -169,21 +184,53 @@ router.post('/newJoke', function(req, res) {
 router.get('/edit/:id', function(req, res){
   console.log(`Editing joke ${req.params.id}`);
 
-  let jokeToEdit = allJokes.filter( (arrayElement) => arrayElement.id == req.params.id);
+  // SSP: Get a connection from the pool
+  pool.getConnection(function(err, connection) {
 
-  // SSP: jokeToEdit should now be an array containing one joke object matching 
-  // the id of the joke to edit.
-  if (jokeToEdit.length != 0)
-  {
-    res.render('editJokeForm', {joke: jokeToEdit[0]});
-  }
-  else
-  {
-    // SSP: We should never get to this branch of the if statement unless the html was somehow
-    // "hacked". Let's just redirect to the main page.
-    res.redirect('/');
-  }
-  
+    // SSP: Check for errors
+    if (err) {
+      // SSP: Got an error, handle it
+      if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
+        console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
+      }
+      else {
+        console.log("Got a DB error when trying to connect", err);
+      }
+      // SSP: Render the error page
+      res.render('error', {error: err});
+    }
+    else {
+      // SSP: All is good, let's use the connect to issue a query
+
+      // SSP: The query function is passed the query, an array of unknowns (if any) and a callback
+      // function. The callback when called will be passed three arguments: error will be an Error 
+      // if one occurred during the query; results will contain the results of the query; fields will 
+      // contain information about the returned results fields (if any)
+      connection.query('select * FROM jokes WHERE id=?',[req.params.id], function(err, results, fields){
+        if (err)
+        {
+          // SSP: Handle the error
+          res.render('error', {error: err});
+        }
+        else {
+          // SSP: Create a joke object from the information we got back from the database query. We will
+          // later pass this object to the editJokeForm.pug page.
+          // Remember, the results object that is being passed to this callback function is an array
+          // containing all the rows in the database which matched our query, which there should only
+          // be one of.
+          let jokeToEdit = {};
+          jokeToEdit.id = results[0].id;
+          jokeToEdit.text = results[0].text;
+          jokeToEdit.date = new Date(results[0].date);
+
+          // SSP: Now that we are finished with the results we can release the connection.
+          connection.release();
+
+          res.render('editJokeForm', {joke: jokeToEdit});
+        }
+      });
+    }
+  });  
 });
 
 router.post('/editJoke', function(req, res) {
@@ -191,34 +238,64 @@ router.post('/editJoke', function(req, res) {
 
   if (req.body.submit == "Update")
   {
+    // SSP: Let's create a new joke object to store this new "edited" joke
+    let editedJoke = {};
+
     // SSP: Let's get the id of the joke we are editing. This id is stored in a 
     // hidden text field in the form called 'id'.
-    let idOfJokeToEdit = req.body.id;
+    editedJoke.id = req.body.id;
 
-    // SSP: The findIndex method on Javascript arrays returns the index that satisfies the provided
-    // texting function or -1 if no element is found.
-    let indexOfJokeToEdit = allJokes.findIndex( (arrayElement) => arrayElement.id == idOfJokeToEdit);
+    // SSP: Let's get the new edited text of the joke. This is stored in a textarea
+    // called jokeText. We'll also trim the text of whitespace while we are at it.
+    editedJoke.text = req.body.jokeText.trim();
 
-    // SSP: jokeToEdit should now be an array containing one Joke object that matches the
-    // id of the joke we want to edit.
+    // SSP: Let's set the date to now to reflect the time that this joke was edited
+    editedJoke.date = new Date();
 
-    let newJokeText = req.body.jokeText.trim();
+    // SSP: Get a connection from the pool
+    pool.getConnection(function(err, connection) {
 
-    if (indexOfJokeToEdit != -1 && newJokeText.length != 0)
-    {
-      // SSP: Edit the text of the Joke we are editing to match the jokeText that
-      // was entered in the form
-      allJokes[indexOfJokeToEdit].text = newJokeText;
+      // SSP: Check for errors
+      if (err) {
+        // SSP: Got an error, handle it
+        if (err.code == 'PROTOCOL_SEQUENCE_TIMEOUT'){
+          console.log("Got a PROTOCOL_SEQUENCE_TIMEOUT error .... ignoring");
+        }
+        else {
+          console.log("Got a DB error when trying to connect", err);
+        }
+        // SSP: Render the error page
+        res.render('error', {error: err});
+      }
+      else {
+        // SSP: All is good, let's use the connect to issue a query
 
-      // SSP: Let's also update the date property of the Joke to reflect
-      // the current date and time
-      allJokes[indexOfJokeToEdit].date = new Date();
-    }
+        // SSP: The query function is passed the query, an array of unknowns (if any) and a callback
+        // function. The callback when called will be passed three arguments: error will be an Error 
+        // if one occurred during the query; results will contain the results of the query; fields will 
+        // contain information about the returned results fields (if any)
+        connection.query('UPDATE jokes SET text=?, date=? WHERE id=?',[editedJoke.text, editedJoke.date, editedJoke.id], function(err, results, fields){
+          if (err)
+          {
+            // SSP: Handle the error
+            res.render('error', {error: err});
+          }
+          else {
+            // SSP: Okay, looks like the UPDATE was successful. All that is left to do is release the
+            // connection and redirect.
+            connection.release();
+            res.redirect('/');
+          }
+        });
+      }
+    }); 
+  }
+  else if (req.body.submit == "Cancel"){
+    res.redirect('/');
   }
   
-  res.redirect('/');
   
-})
+});
 
 
 module.exports = router;
